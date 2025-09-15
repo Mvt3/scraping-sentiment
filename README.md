@@ -50,3 +50,16 @@ To use this application, you need your own Reddit API keys. Follow these steps:
 REDDIT_CLIENT_ID=your_client_id_here
 REDDIT_SECRET=your_client_secret_here
 REDDIT_USER_AGENT=your_user_agent_here
+```
+
+
+DEMO: The user enters a topic or keyword, and the app performs sentiment analysis on Reddit comments to return a general appreciation percentage for that topic.
+
+![App Demo](assets/demo.gif)
+
+
+## Upcoming Features
+
+- Search filters.  
+- Improved search functionality.  
+- Option to choose a different sentiment analysis model. 
