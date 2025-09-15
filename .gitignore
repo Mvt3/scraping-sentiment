@@ -1,4 +1,5 @@
 #to determine which files and directories to ignore in the project
 
+
 *.pyc
 __pycache__/
