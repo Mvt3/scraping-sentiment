@@ -1,9 +1,10 @@
-#front end
+# front end
 
-#imports
+# imports
 import sys
 from PyQt5.QtWidgets import QApplication
-from ui_main import MainWindow
+from frontend.ui_main import MainWindow
+
 
 def main():
     app = QApplication(sys.argv)
