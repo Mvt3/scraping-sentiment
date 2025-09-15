@@ -11,12 +11,11 @@ USER_AGENT = os.getenv("REDDIT_USER_AGENT")
 
 
 # keywords to improve search results
-KEYWORDS = ["review", "opinion", "experience", "impression"]
+# KEYWORDS = ["review", "opinion", "experience", "impression"]
 
 
 def build_query(topic):
-    extra = " OR ".join(KEYWORDS)
-    return f'"{topic}" ({extra})'
+    return f'{topic} (opinion OR thoughts OR review)'
 
 
 # connection to reddit
