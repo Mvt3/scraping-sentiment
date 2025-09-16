@@ -53,7 +53,7 @@ REDDIT_USER_AGENT=your_user_agent_here
 ```
 
 
-DEMO: The user enters a topic or keyword, and the app performs sentiment analysis on Reddit comments to return a general appreciation percentage for that topic.
+DEMO: The user enters a topic or keyword, and the app performs sentiment analysis on Reddit comments to return a general appreciation percentage for that topic. The model used is VADER
 
 ![App Demo](assets/demo.gif)
 
