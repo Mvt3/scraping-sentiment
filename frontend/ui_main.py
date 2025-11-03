@@ -6,8 +6,10 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QTextEdit,
     QVBoxLayout,
+    QHBoxLayout,
     QWidget,
     QFrame,
+    QComboBox,
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
@@ -23,9 +25,11 @@ class ScraperThread(QThread):
     progress = pyqtSignal(str)
     finished_with_score = pyqtSignal(float)
 
-    def __init__(self, search_text):
+    def __init__(self, search_text, source="all"):
         super().__init__()
         self.search_text = search_text
+        self.source = source
+        
 
     #### ALL THE MAGIC HAPPENS HERE ####
     def run(self):
@@ -33,7 +37,7 @@ class ScraperThread(QThread):
             self.progress.emit("Starting scraping...")
 
             comments = get_comments(
-                "all", self.search_text, post_limit=4, comment_limit=55
+                self.source, self.search_text, post_limit=4, comment_limit=55
             )
 
             results_df = analyze_sentiment(comments)
@@ -80,14 +84,36 @@ class MainWindow(QMainWindow):
         # Search bar
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Enter your search term...")
-        self.search_input.setMinimumHeight(80)
-        self.search_input.setMaximumWidth(900)
+        self.search_input.setMinimumHeight(60)
+        self.search_input.setMaximumWidth(750)
         self.layout.addWidget(self.search_input, alignment=Qt.AlignCenter)
+
+        # Filter row (label + dropdown) 
+        filter_row = QWidget()
+        filter_row_layout = QHBoxLayout(filter_row)
+        filter_row_layout.setContentsMargins(0, 0, 0, 0)
+        filter_row_layout.setSpacing(8)
+
+        filter_label = QLabel("Filtro:")
+        filter_label.setMinimumHeight(40)
+        filter_label.setStyleSheet("font-size:14px; color: #ffffff; padding-left: 4px; padding-right: 6px;")
+        filter_row_layout.addWidget(filter_label, alignment=Qt.AlignVCenter)
+
+        self.filter_combo = QComboBox()
+        self.filter_combo.setMinimumHeight(40)
+        self.filter_combo.setMaximumWidth(240)
+        self.filter_combo.setEditable(False)
+
+        # add elements to the filter
+        self.filter_combo.addItems(["All","Gaming", "Technology", "Movies", "Music", "Sports", "Politics", "AskReddit", "Books", "History"])
+        filter_row_layout.addWidget(self.filter_combo, alignment=Qt.AlignVCenter)
+
+        self.layout.addWidget(filter_row, alignment=Qt.AlignCenter)
 
         # Analyze button
         self.analyze_button = QPushButton("Start Analysis")
-        self.analyze_button.setMinimumHeight(65)
-        self.analyze_button.setMaximumWidth(300)
+        self.analyze_button.setMinimumHeight(48)
+        self.analyze_button.setMaximumWidth(220)
         self.layout.addWidget(self.analyze_button, alignment=Qt.AlignCenter)
 
         self.analyze_button.clicked.connect(
@@ -133,14 +159,19 @@ class MainWindow(QMainWindow):
         # Connect button to function
         self.analyze_button.clicked.connect(self.start_analysis)
 
+
+    
+
     # Function to start analysis
     def start_analysis(self):
         search_text = self.search_input.text().strip()
-
+        select_source = self.filter_combo.currentText().lower()
         # Validation
         if not search_text:
             self.sentiment_label.setText("Please enter a valid search term.")
             return
+        
+        source = select_source if select_source else 'all'
 
         # Prevent multiple clicks
         if self.scraping_thread and self.scraping_thread.isRunning():
@@ -154,7 +185,7 @@ class MainWindow(QMainWindow):
         self.comments_display.clear()
 
         # Start scraping in a separate thread
-        self.scraping_thread = ScraperThread(search_text)
+        self.scraping_thread = ScraperThread(search_text, source)
         self.scraping_thread.start()
 
         # Update button when finished
@@ -181,6 +212,19 @@ class MainWindow(QMainWindow):
         self.analyze_button.setEnabled(True)
         self.sentiment_label.setText("Analysis complete!")
 
+    def set_filter_options(self, options):
+
+        if not hasattr(self, "filter_combo"):
+            return
+
+        self.filter_combo.clear()
+        if not options:
+            self.filter_combo.addItem("")
+            return
+
+        for opt in options:
+            self.filter_combo.addItem(str(opt))
+
     # App styles
     def apply_clean_styles(self):
         stylesheet = """
@@ -195,9 +239,9 @@ class MainWindow(QMainWindow):
                     stop:0 rgba(255, 255, 255, 0.12), 
                     stop:1 rgba(255, 255, 255, 0.06));
                 border: 2px solid rgba(64, 224, 255, 0.5);
-                border-radius: 18px;
-                padding: 22px 35px;
-                font-size: 24px;
+                border-radius: 12px;
+                padding: 8px 14px;
+                font-size: 16px;
                 font-weight: 500;
                 color: #ffffff;
                 selection-background-color: #40e0ff;
@@ -209,14 +253,32 @@ class MainWindow(QMainWindow):
                     stop:0 rgba(64, 224, 255, 0.18), 
                     stop:1 rgba(64, 224, 255, 0.08));
             }
+
+            QComboBox {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(255, 255, 255, 0.12), 
+                    stop:1 rgba(255, 255, 255, 0.06));
+                border: 2px solid rgba(64, 224, 255, 0.5);
+                border-radius: 12px;
+                padding: 6px 12px;
+                font-size: 15px;
+                color: #ffffff;
+            }
+
+            QComboBox:focus {
+                border: 2px solid #40e0ff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(64, 224, 255, 0.18), 
+                    stop:1 rgba(64, 224, 255, 0.08));
+            }
             
             QPushButton {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
                     stop:0 #6366f1, stop:0.5 #8b5cf6, stop:1 #a855f7);
                 border: 2px solid rgba(255, 255, 255, 0.2);
-                border-radius: 16px;
-                padding: 20px 40px;
-                font-size: 19px;
+                border-radius: 12px;
+                padding: 10px 20px;
+                font-size: 14px;
                 font-weight: bold;
                 color: #ffffff;
             }
