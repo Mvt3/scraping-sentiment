@@ -60,6 +60,6 @@ DEMO: The user enters a topic or keyword, and the app performs sentiment analysi
 
 ## Upcoming Features
 
-- Search filters.  
+- Search filters.  ✔️
 - Improved search functionality.  
-- Option to choose a different sentiment analysis model. 
+- Option to choose a different sentiment analysis model.  ✔️
