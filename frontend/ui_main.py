@@ -17,7 +17,8 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 from backend.sentiment import analyze_sentiment
 from backend.scraper import get_comments
-from backend.functions_aux import simple_appreciation_score
+from backend.functions_aux import simple_appreciation_score, summarize_roberta_results
+from backend.sentimentNewModel import analyze_sentiment_nm
 
 
 class ScraperThread(QThread):
@@ -25,10 +26,11 @@ class ScraperThread(QThread):
     progress = pyqtSignal(str)
     finished_with_score = pyqtSignal(float)
 
-    def __init__(self, search_text, source="all"):
+    def __init__(self, search_text, source="all", model="vader"):
         super().__init__()
         self.search_text = search_text
         self.source = source
+        self.model = model
         
 
     #### ALL THE MAGIC HAPPENS HERE ####
@@ -37,12 +39,21 @@ class ScraperThread(QThread):
             self.progress.emit("Starting scraping...")
 
             comments = get_comments(
-                self.source, self.search_text, post_limit=4, comment_limit=55
+                self.source, self.search_text, post_limit=5, comment_limit=56
             )
 
-            results_df = analyze_sentiment(comments)
 
-            summary = simple_appreciation_score(results_df)
+            # Sentiment analysis
+            if self.model == "vader":
+                 results_df = analyze_sentiment(comments)
+                 summary = simple_appreciation_score(results_df)
+
+            else:
+                 results_df = analyze_sentiment_nm(comments)
+                 summary = summarize_roberta_results(results_df)
+
+
+
 
             self.finished_with_score.emit(summary)
 
@@ -88,13 +99,15 @@ class MainWindow(QMainWindow):
         self.search_input.setMaximumWidth(750)
         self.layout.addWidget(self.search_input, alignment=Qt.AlignCenter)
 
+
+        #### Search topic filter ####
         # Filter row (label + dropdown) 
         filter_row = QWidget()
         filter_row_layout = QHBoxLayout(filter_row)
         filter_row_layout.setContentsMargins(0, 0, 0, 0)
         filter_row_layout.setSpacing(8)
 
-        filter_label = QLabel("Filtro:")
+        filter_label = QLabel("Filter:")
         filter_label.setMinimumHeight(40)
         filter_label.setStyleSheet("font-size:14px; color: #ffffff; padding-left: 4px; padding-right: 6px;")
         filter_row_layout.addWidget(filter_label, alignment=Qt.AlignVCenter)
@@ -107,8 +120,31 @@ class MainWindow(QMainWindow):
         # add elements to the filter
         self.filter_combo.addItems(["All","Gaming", "Technology", "Movies", "Music", "Sports", "Politics", "AskReddit", "Books", "History"])
         filter_row_layout.addWidget(self.filter_combo, alignment=Qt.AlignVCenter)
-
         self.layout.addWidget(filter_row, alignment=Qt.AlignCenter)
+
+
+        #### model selection ####
+        model_row = QWidget()
+        model_row_layout = QHBoxLayout(model_row)
+        model_row_layout.setContentsMargins(0, 0, 0, 0)
+        model_row_layout.setSpacing(8)
+
+        model_label = QLabel("Model:")
+        model_label.setMinimumHeight(40)
+        model_label.setStyleSheet("font-size:14px; color: #ffffff; padding-left: 4px; padding-right: 6px;")
+        model_row_layout.addWidget(model_label, alignment=Qt.AlignVCenter)
+
+        self.model_combo = QComboBox()
+        self.model_combo.setMinimumHeight(40)
+        self.model_combo.setMaximumWidth(240)
+        self.model_combo.setEditable(False)
+
+        self.model_combo.addItem("VADER (fast)", "vader")
+        self.model_combo.addItem("RoBERTa (precise)", "nm")
+        model_row_layout.addWidget(self.model_combo, alignment=Qt.AlignVCenter)
+        self.layout.addWidget(model_row, alignment=Qt.AlignCenter)
+    
+        
 
         # Analyze button
         self.analyze_button = QPushButton("Start Analysis")
@@ -166,12 +202,14 @@ class MainWindow(QMainWindow):
     def start_analysis(self):
         search_text = self.search_input.text().strip()
         select_source = self.filter_combo.currentText().lower()
+        select_model = self.model_combo.currentData()
         # Validation
         if not search_text:
             self.sentiment_label.setText("Please enter a valid search term.")
             return
         
         source = select_source if select_source else 'all'
+        model = select_model if select_model else 'vader'
 
         # Prevent multiple clicks
         if self.scraping_thread and self.scraping_thread.isRunning():
@@ -185,7 +223,7 @@ class MainWindow(QMainWindow):
         self.comments_display.clear()
 
         # Start scraping in a separate thread
-        self.scraping_thread = ScraperThread(search_text, source)
+        self.scraping_thread = ScraperThread(search_text, source, model)
         self.scraping_thread.start()
 
         # Update button when finished

@@ -32,18 +32,44 @@ def sentiment_summary(df):
 
 
 
-
-
+#VADER appreciation score
 def simple_appreciation_score(df):
 
-    #exclude neutral comments
-    non_neutral = df[df['sentiment'] != 'Neutral']
+    if len(df) == 0:
+        return None
     
-    if len(non_neutral) == 0:
-        return 50.0
+    pos = len(df[df['sentiment'] == 'Positive'])
+    neu = len(df[df['sentiment'] == 'Neutral'])
+    neg = len(df[df['sentiment'] == 'Negative'])
+    total = len(df)
     
-    positive_count = len(non_neutral[non_neutral['sentiment'] == 'Positive'])
-    total_non_neutral = len(non_neutral)
+    # Weighted score
+    score = ((pos * 1.0 + neu * 0.5 + neg * 0.0) / total) * 100
     
-    appreciation = (positive_count / total_non_neutral) * 100
-    return round(appreciation, 1)
+    return round(score, 1)
+
+
+
+#RoBERTa appreciation score
+def summarize_roberta_results(df):
+
+    # summary = df["sentiment"].value_counts(normalize=True) * 100
+    # print("\nSentiment Summary (RoBERTa)")
+    # for sentiment, pct in summary.items():
+    #     print(f"{sentiment}: {pct:.1f}%")
+    # print("\nSample results:")
+    # print(df.head())
+    # return 0.0
+
+    if len(df) == 0:
+        return None
+    
+    pos = len(df[df['sentiment'] == 'positive'])
+    neu = len(df[df['sentiment'] == 'neutral'])
+    neg = len(df[df['sentiment'] == 'negative'])
+    
+
+    score = ((pos * 1.0 + neu * 0.5 + neg * 0.0) / len(df)) * 100
+    
+    return round(score, 1)
+
